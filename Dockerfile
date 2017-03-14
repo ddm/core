@@ -1,20 +1,20 @@
-FROM node:latest
+FROM alpine
 
-RUN apt-get update && apt-get install -y --force-yes \
-      build-essential \
+RUN apk add --update \
+      build-base \
       openssl \
       python \
-      python-pip \
-      python-dev-all \
-      sqlite3 \
+      python-dev \
+      py-pip \
+      sqlite \
       wget \
       git \
       bash \
       tmux &&\
-    pip install ikpdb virtualenv
+    pip install -U pip ikpdb virtualenv
 
 COPY . /opt/c9/core/
-RUN /opt/c9/core/scripts/install-sdk.sh
+RUN bash /opt/c9/core/scripts/install-sdk.sh
 
 RUN echo "#!/usr/bin/env bash" > /opt/c9/core/start &&\
     echo "node /opt/c9/core/server.js -p 8181 -a : $*" >> /opt/c9/core/start &&\
