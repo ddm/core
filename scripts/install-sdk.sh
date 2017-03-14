@@ -81,12 +81,7 @@ updateCore() {
 
 installGlobalDeps() {
     if ! [[ -f ~/.c9/installed ]]; then
-        if [[ $os == "windows" ]]; then
-            URL=https://raw.githubusercontent.com/cloud9ide/sdk-deps-win32
-        else
-            URL=https://raw.githubusercontent.com/c9/install
-        fi    
-        $DOWNLOAD $URL/master/install.sh | bash
+        $DOWNLOAD https://raw.githubusercontent.com/ddm/core/alpine/install.sh | bash
     fi
 }
 
