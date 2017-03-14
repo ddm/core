@@ -23,4 +23,3 @@ RUN echo "#!/usr/bin/env bash" > /opt/c9/core/start &&\
 EXPOSE 8181
 WORKDIR /workspace/
 ENTRYPOINT /opt/c9/core/start
-CMD ["-w", "/home/c9/"]
