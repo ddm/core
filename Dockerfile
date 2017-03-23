@@ -22,12 +22,12 @@ COPY ./local /root/.c9/local
 COPY ./configs /root/.c9/configs
 WORKDIR /root/.c9
 RUN echo "#!/usr/bin/env bash" > /root/.c9/start &&\
-    echo "node /root/.c9/server.js -p 8181 -a : $*" >> /root/.c9/start &&\
+    echo "node /root/.c9/server.js -p $PORT -a : $*" >> /root/.c9/start &&\
     chmod +x /root/.c9/start &&\
     mkdir -p /workspace &&\
     npm install &&\
-    npm install \
-      nak \
+    npm install --no-spin -g  \
+      https://github.com/ddm/pty.js.git \
       sqlite \
       sequelize \
       coffee \
@@ -35,7 +35,19 @@ RUN echo "#!/usr/bin/env bash" > /root/.c9/start &&\
       less \
       sass \
       stylus \
-      https://github.com/ddm/pty.js.git &&\
+      nodemon \
+      bower \
+      http-server \
+      npm-check-updates \
+      nsp \
+      underscore-cli \
+      express-generator \
+      mocha \
+      eslint \
+      jshint \
+      grunt-cli \
+      gulp \
+      yo &&\
     mkdir -p /root/.c9/node/bin/ &&\
     ln -s `which node` /root/.c9/node/bin/node &&\
     ln -s `which npm` /root/.c9/node/bin/npm
