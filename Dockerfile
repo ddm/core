@@ -13,7 +13,6 @@ RUN apk add --update \
       tmux &&\
     pip install -U pip ikpdb virtualenv &&\
     npm install --no-spin -g  \
-      https://github.com/ddm/pty.js.git \
       sqlite \
       sequelize \
       coffee \
@@ -44,16 +43,16 @@ COPY ./local /root/.c9/local
 COPY ./configs /root/.c9/configs
 
 ENV PORT 8181
+ENV IP 0.0.0.0
 WORKDIR /root/.c9
 RUN echo "#!/usr/bin/env bash" > /root/.c9/start &&\
-    echo "node /root/.c9/server.js -p $PORT -a : $*" >> /root/.c9/start &&\
+    echo "IP=$IP node /root/.c9/server.js -p $PORT -a : $*" >> /root/.c9/start &&\
     chmod +x /root/.c9/start &&\
-    mkdir -p /workspace &&\
-    npm install &&\
+    npm install --no-spin &&\
     mkdir -p /root/.c9/node/bin/ &&\
     ln -s `which node` /root/.c9/node/bin/node &&\
     ln -s `which npm` /root/.c9/node/bin/npm
 
 EXPOSE 8181
-WORKDIR /workspace/
+WORKDIR /root/.c9/
 ENTRYPOINT /root/.c9/start
