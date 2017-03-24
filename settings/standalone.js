@@ -17,7 +17,7 @@ module.exports = function(manifest, installPath) {
     var runners = require("../plugins/c9.ide.run/runners_list").local;
     var builders = require("../plugins/c9.ide.run.build/builders_list");
     
-    var workspaceDir = path.resolve("/workspace/");
+    var workspaceDir = path.resolve(process.cwd());
     var sdk = !manifest.sdk;
     var win32 = process.platform == "win32";
     
