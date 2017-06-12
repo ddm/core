@@ -186,7 +186,7 @@ define(function(require, exports, module) {
                 column: 0,
                 id: frame.id,
                 line: parseInt(frame.line_number, 10) - 1,  // IKPdb lines are 1 based
-                path: util.normalizePath(frame.file_path),
+                path: util.normalizePath("/" + frame.file_path),
                 sourceId: frame.file_path,
                 thread: thread_id,
                 istop: (i === 0),
@@ -542,7 +542,8 @@ define(function(require, exports, module) {
         function getProxySource(process) {
             return PROXY.replace(/\/\/.*/g, "")
                         .replace(/[\n\r]/g, "")
-                        .replace(/\{PORT\}/, (process.runner[0] || process.runner).debugport);
+                        .replace(/\{DEBUGGED_PROCESS_PORT\}/, (process.runner[0] || process.runner).debugport)
+                        .replace(/\{DEBUGGED_PROCESS_HOST\}/, (process.runner[0] || process.runner).debughost || "127.0.0.1");
         }
 
 

@@ -15,7 +15,6 @@ define(function(require, exports, module) {
         var api = imports.api;
         var info = imports.info;
         var util = imports.util;
-        var _ = require("lodash");
         
         var join = require("path").join;
         
@@ -44,9 +43,9 @@ define(function(require, exports, module) {
         var TEMPLATE = options.template || { user: {}, project: {}, state: {}};
         var INTERVAL = 1000;
         var PATH = {
-            "project": c9.toInternalPath(options.projectConfigPath || "/.c9") + "/project.settings",
-            "user": c9.toInternalPath(options.userConfigPath || "~/.c9") + "/user.settings",
-            "state": c9.toInternalPath(options.stateConfigFilePath || (options.stateConfigPath || "/.c9") + "/state.settings")
+            "project": util.normalizePath(c9.toInternalPath(options.projectConfigPath || "/.c9")) + "/project.settings",
+            "user": util.normalizePath(c9.toInternalPath(options.userConfigPath || "~/.c9")) + "/user.settings",
+            "state": util.normalizePath(c9.toInternalPath(options.stateConfigFilePath || (options.stateConfigPath || "/.c9") + "/state.settings"))
         };
         var KEYS = Object.keys(PATH);
         
@@ -346,17 +345,14 @@ define(function(require, exports, module) {
         }
         
         function update(type, json, ud) {
-            // Do nothing if they are the same
-            if (_.isEqual(model[type], json))
-                return;
-            
             userData = ud;
             
             // Compare key/values (assume source has same keys as target)
             (function recur(source, target, base) {
                 for (var prop in source) {
                     if (prop == "json()") {
-                        setJson(base, source[prop]);
+                        if (!target || !isEqual(source[prop], target[prop]))
+                            setJson(base, source[prop]);
                     }
                     else if (typeof source[prop] == "object") {
                         if (!target[prop]) target[prop] = {};
@@ -369,6 +365,30 @@ define(function(require, exports, module) {
             })(json, model[type], type);
             
             userData = null;
+        }
+        
+        function isEqual(a, b) {
+            var typeA = typeof a;
+            var typeB = typeof b;
+            if (typeA != typeB) return false;
+            if (!a || typeA !== "object")
+                return a == b;
+            if (Array.isArray(a)) {
+                if (!Array.isArray(b)) return false;
+                if (a.length != b.length) return false;
+                for (var i = 0; i < a.length; i++) {
+                    if (!isEqual(a[i], b[i])) return false;
+                }
+            }
+            else {
+                var aKeys = Object.keys(a);
+                var bKeys = Object.keys(b);
+                if (aKeys.length != bKeys.length) return false;
+                for (var i = 0; i < aKeys.length; i++) {
+                    if (!isEqual(a[aKeys[i]], b[aKeys[i]])) return false;
+                }
+            }
+            return true;
         }
         
         function setNode(query, value) {
@@ -451,7 +471,7 @@ define(function(require, exports, module) {
         
         function getNumber(query) {
             var double = get(query);
-            return parseFloat(double, 10);
+            return parseFloat(double);
         }
         
         function getNode(query) {
