@@ -1,4 +1,4 @@
-FROM dimdm/node:6.10.2
+FROM dimdm/node:6.11.0
 
 COPY ./node_modules /root/.c9/node_modules
 COPY ./plugins /root/.c9/plugins
