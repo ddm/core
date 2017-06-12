@@ -1812,25 +1812,6 @@ defineProp(Array.prototype, "pushUnique", function(){
 });
 
 /*
- * @todo: Ruben: could you please comment on this function? Seems to serve a very
- * specific purpose...
- *
- * I also could not find an occurrence in our codebase.
- */
-defineProp(Array.prototype, "search", function(){
-    for (var i = 0, length = arguments.length; i < length; i++) {
-        if (typeof this[i] != "array")
-            continue;
-        for (var j = 0; j < length; j++) {
-            if (this[i][j] != arguments[j])
-                break;
-            else if (j == (length - 1))
-                return this[i];
-        }
-    }
-});
-
-/*
  * Iterate through each value of an array instance from left to right (front to
  * back) and execute a callback Function for each value.
  *
@@ -3725,8 +3706,7 @@ apf.setNodeValue = function(xmlNode, nodeValue) {
     }
     else {
         var oldValue = xmlNode.nodeValue;
-        xmlNode.nodeValue = nodeValue === undefined || nodeValue === null ||
-            nodeValue == NaN ? "" : String(nodeValue);
+        xmlNode.nodeValue = nodeValue == null ? "" : String(nodeValue);
 
         //AML support - getters/setters would be awesome
         if (xmlNode.$triggerUpdate)
@@ -3760,6 +3740,52 @@ apf.queryNodes = function(contextNode, sExpr) {
 apf.queryNode = function(contextNode, sExpr) {
     return contextNode.selectSingleNode(sExpr);
 };
+
+/**
+ * Queries an XML node using xpath for a single string value.
+ * @param {XMLElement} xmlNode The XML element to query
+ * @param {String}     xpath   The xpath query
+ * @return {String} The value of the query result or empty string
+ */
+apf.queryValue = function (xmlNode, xpath) {
+    if (!xmlNode)
+        return "";
+    if (xmlNode.nodeType == 2)
+        return xmlNode.nodeValue;
+
+    if (xpath) {
+        xmlNode = apf.queryNode(xmlNode, xpath);
+        if (!xmlNode)
+            return "";
+    }
+   return xmlNode.nodeType == 1
+        ? (!xmlNode.firstChild ? "" : xmlNode.firstChild.nodeValue)
+        : xmlNode.nodeValue;
+};
+
+
+/**
+ * Queries an xml node using xpath for multiple string values.
+ * @param {XMLElement} xmlNode The xml element to query
+ * @param {String}     xpath   The xpath query
+ * @return {Array} A list of values resulting from the query
+ */
+apf.queryValues = function(xmlNode, xpath) {
+    var out = [];
+    if (!xmlNode) return out;
+
+    var nodes = apf.queryNodes(xmlNode, xpath);
+    if (!nodes.length) return out;
+
+    for (var i = 0; i < nodes.length; i++) {
+        var n = nodes[i];
+        if (n.nodeType == 1)
+            n = n.firstChild;
+        out.push(n.nodeValue || "");
+    }
+    return out;
+};
+
 
 /**
  * Retrieves the attribute of an XML node, or the first parent node that has
@@ -3907,9 +3933,6 @@ apf.extend(apf.config, {
     
     
     debug: false,
-    disableSpace: true,
-    allowSelect: false,
-    allowBlur: true,
     // initdelay: false,
       
     
@@ -8103,6 +8126,16 @@ apf.AmlElement = function(struct, tagName) {
      * @returns {apf.AmlElement} The modified element.
      */
     this.removeAttribute = function(name){ //@todo apf3.0 domattr
+        var item = this.attributes[name];
+        if (item) {
+            //@todo hack!
+            //this should be done properly
+            var oldValue = item.nodeValue;
+            item.nodeValue = item.value = "";
+            item.$triggerUpdate(null, oldValue);
+            item.ownerElement = null;
+            item.nodeValue = item.value = oldValue;
+        }
         delete this.attributes[name];
         return this;
     };
@@ -20780,7 +20813,7 @@ apf.textbox.masking = function(){
         "107": "+",
         "109": "-",
         "110": ".",
-        "110": "/"
+        "111": "/"
     };
     
     this.addEventListener("keydown", function(e) {
