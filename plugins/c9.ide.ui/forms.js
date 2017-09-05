@@ -114,12 +114,10 @@ define(function(require, exports, module) {
                 var heading = headings[name];
                 if (!heading) {
                     if (!hack) {
-                        var aml = container.appendChild(new apf.bar());
-                        aml.$int.innerHTML = '<div class="header"><span></span><div>'
-                            + apf.escapeXML((debug 
-                                ? "\[" + (position || "") + "\] " 
-                                : "") + name) 
-                            + '</div></div>';
+                        var aml = container.appendChild(new ui.bar());
+                        ui.buildDom(["div", { class: "header" }, 
+                            ["span"], ["div", (debug ? "[" + (position || "") + "] " : "") + name]
+                        ]);
                     }
                     
                     heading = headings[name] = {
@@ -160,46 +158,62 @@ define(function(require, exports, module) {
                 if (options.setting && !options.path)
                     options.path = options.setting;
                 
-                if (debug)
-                    name = "\\[" + (position || "") + "\\] " + name;
+                name = options.title || name;
+                var positionMark = debug ? "[" + (position || "") + "] " : "";
+                if (typeof name == "string")
+                    name = positionMark + name + ":";
+                else
+                    name = [null, positionMark, name, ":"];
                 
+                var ignoreChange = false;
+                function onAfterChange(e) {
+                    if (ignoreChange)
+                        return;
+                    var path = e.currentTarget && e.currentTarget.getAttribute("settingPath") || options.path;
+                    if (path)
+                        settings.set(path, e.value);
+                        
+                    if (options.onchange)
+                        options.onchange({ value: e.value, type: e.currentTarget.tagName });
+                }
+                function addSettingListener(path, item, plugin) {
+                    if (path && item) {
+                        var update = function() {
+                            ignoreChange = true;
+                            item.setValue(settings.get(path));
+                            ignoreChange = false;
+                        };
+                        settings.on(path, update, plugin);
+                        settings.on("read", update, plugin);
+                    }
+                }
+                
+                var main, secondary;
                 switch (options.type) {
                     case "checkbox":
                         childNodes = [
-                            new ui.label({ width: width, maxwidth: maxwidth, caption: name + ":" }),
-                            new ui.checkbox({
+                            new ui.label({ width: width, maxwidth: maxwidth, caption: name }),
+                            main = new ui.checkbox({
                                 value: options.path 
                                     ? settings.get(options.path) 
                                     : (options.defaultValue || ""),
                                 values: options.values,
                                 skin: "cboffline",
-                                onafterchange: function(e) {
-                                    if (options.path)
-                                        settings.set(options.path, e.value);
-                                        
-                                    if (options.onchange)
-                                        options.onchange({ value: e.value });
-                                }
+                                onafterchange: onAfterChange,
+                                settingPath: options.path,
                             })
                         ];
                     break;
                     case "dropdown":
-                        var dd;
                         childNodes = [
-                            new ui.label({ width: width, maxwidth: maxwidth, caption: name + ":" }),
-                            dd = new ui.dropdown({
+                            new ui.label({ width: width, maxwidth: maxwidth, caption: name }),
+                            main = new ui.dropdown({
                                 items: options.items,
                                 width: options.width || widths.dropdown,
                                 skin: "black_dropdown",
                                 margin: "-1 0 0 0",
                                 zindex: 100,
-                                onafterchange: function(e) {
-                                    if (options.path)
-                                        settings.set(options.path, e.value);
-                                    
-                                    if (options.onchange)
-                                        options.onchange({ value: e.value || e.args[2] });
-                                }, 
+                                onafterchange: onAfterChange, 
                                 value: options.path
                                     ? settings.get(options.path)
                                     : (options.defaultValue || ""),
@@ -207,15 +221,11 @@ define(function(require, exports, module) {
                                 "empty-message": options["empty-message"]
                             })
                         ];
-                        
-                        settings.on(options.path, function() {
-                            dd.setValue(settings.get(options.path));
-                        }, plugin);
                     break;
                     case "spinner":
                         childNodes = [
-                            new ui.label({ width: width, maxwidth: maxwidth, caption: name + ":" }),
-                            new ui.spinner({
+                            new ui.label({ width: width, maxwidth: maxwidth, caption: name }),
+                            main = new ui.spinner({
                                 width: options.width || widths.spinner,
                                 value: options.path 
                                     ? settings.get(options.path) 
@@ -223,32 +233,24 @@ define(function(require, exports, module) {
                                 min: options.min || 0,
                                 max: options.max || 10,
                                 realtime: typeof options.realtime !== "undefined" ? options.realtime : 1,
-                                onafterchange: function(e) {
-                                    if (options.path)
-                                        settings.set(options.path, e.value);
-                                    if (options.onchange)
-                                        options.onchange({ value: e.value });
-                                }, 
+                                onafterchange: onAfterChange,
+                                settingPath: options.path, 
                             })
                         ];
                     break;
                     case "checked-spinner":
                         childNodes = [
-                            new ui.checkbox({
+                            secondary = new ui.checkbox({
                                 value: options.checkboxPath 
                                     ? settings.get(options.checkboxPath) 
                                     : (options.defaultCheckboxValue || ""),
                                 width: width, maxwidth: maxwidth, 
-                                label: name + ":",
+                                label: name,
                                 skin: "checkbox_black",
-                                onafterchange: function(e) {
-                                    if (options.checkboxPath)
-                                        settings.set(options.checkboxPath, e.value);
-                                    if (options.onchange)
-                                        options.onchange({ value: e.value, type: "checkbox" });
-                                }, 
+                                onafterchange: onAfterChange,
+                                settingPath: options.checkboxPath,
                             }),
-                            new ui.spinner({
+                            main = new ui.spinner({
                                 width: options.width || widths["checked-spinner"],
                                 value: options.path 
                                     ? settings.get(options.path) 
@@ -256,37 +258,29 @@ define(function(require, exports, module) {
                                 min: options.min || 0,
                                 max: options.max || 10,
                                 realtime: typeof options.realtime !== "undefined" ? options.realtime : 1,
-                                onafterchange: function(e) {
-                                    if (options.path)
-                                        settings.set(options.path, e.value);
-                                    if (options.onchange)
-                                        options.onchange({ value: e.value, type: "spinner" });
-                                }, 
+                                onafterchange: onAfterChange,
+                                settingPath: options.path,
                             })
                         ];
                     break;
                     case "checkbox-single":
                         childNodes = [
-                            new ui.checkbox({
+                            main = new ui.checkbox({
                                 value: options.path
                                     ? settings.get(options.path) 
                                     : (options.defaultValue || ""),
                                 width: options.width || widths["checked-single"], 
                                 label: name,
                                 skin: "checkbox_black",
-                                onafterchange: function(e) {
-                                    if (options.path)
-                                        settings.set(options.path, e.value);
-                                    if (options.onchange)
-                                        options.onchange({ value: e.value });
-                                } 
+                                onafterchange: onAfterChange,
+                                settingPath: options.path,
                             })
                         ];
                     break;
                     case "textbox":
                         childNodes = [
-                            new ui.label({ width: width, maxwidth: maxwidth, caption: name + ":" }),
-                            new ui.textbox({
+                            new ui.label({ width: width, maxwidth: maxwidth, caption: name }),
+                            main = new ui.textbox({
                                 skin: skins.textbox || "searchbox",
                                 margin: "-3 0 0 0",
                                 "initial-message": options.message || "",
@@ -295,19 +289,15 @@ define(function(require, exports, module) {
                                     ? settings.get(options.path) 
                                     : (options.defaultValue || ""),
                                 realtime: typeof options.realtime !== "undefined" ? options.realtime : 1,
-                                onafterchange: function(e) {
-                                    if (options.path)
-                                        settings.set(options.path, e.value);
-                                    if (options.onchange)
-                                        options.onchange({ value: e.value });
-                                },
+                                onafterchange: onAfterChange,
+                                settingPath: options.path,
                             })
                         ];
                     break;
                     case "password":
                         childNodes = [
-                            new ui.label({ width: width, maxwidth: maxwidth, caption: name + ":" }),
-                            new ui.password({
+                            new ui.label({ width: width, maxwidth: maxwidth, caption: name }),
+                            main = new ui.password({
                                 skin: skins.password || "forminput",
                                 width: options.width || widths.password,
                                 value: options.path 
@@ -319,25 +309,21 @@ define(function(require, exports, module) {
                     break;
                     case "colorbox":
                         childNodes = [
-                            new ui.label({ width: width, maxwidth: maxwidth, caption: name + ":" }),
-                            new ui.colorbox({
+                            new ui.label({ width: width, maxwidth: maxwidth, caption: name }),
+                            main = new ui.colorbox({
                                 width: options.width || widths.colorbox,
                                 value: options.path 
                                     ? settings.get(options.path) 
                                     : (options.defaultValue || ""),
                                 realtime: typeof options.realtime !== "undefined" ? options.realtime : 1,
-                                onafterchange: function(e) {
-                                    if (options.path)
-                                        settings.set(options.path, e.value);
-                                    if (options.onchange)
-                                        options.onchange({ value: e.value });
-                                },
+                                onafterchange: onAfterChange,
+                                settingPath: options.path,
                             })
                         ];
                     break;
                     case "button":
                         childNodes = [
-                            new ui.label({ width: width, maxwidth: maxwidth, caption: name + ":" }),
+                            new ui.label({ width: width, maxwidth: maxwidth, caption: name }),
                             new ui.button({
                                 skin: "blackbutton",
                                 height: 24,
@@ -385,8 +371,8 @@ define(function(require, exports, module) {
                     break;
                     case "textarea":
                         childNodes = [
-                            new ui.label({ width: width, maxwidth: maxwidth, caption: name + ":" }),
-                            new ui.textarea({
+                            new ui.label({ width: width, maxwidth: maxwidth, caption: name }),
+                            main = new ui.textarea({
                                 width: options.width || widths.textarea,
                                 height: options.height || 200,
                                 value: options.path 
@@ -404,8 +390,8 @@ define(function(require, exports, module) {
                             edge: options.edge || edge,
                             type: options.type,
                             childNodes: [
-                                new ui.label({ height: 40, caption: name + ":" }),
-                                new ui.textarea({
+                                new ui.label({ height: 40, caption: name }),
+                                main = new ui.textarea({
                                     width: options.width || widths.textarea,
                                     height: options.height || 200,
                                     style: options.fixedFont
@@ -414,7 +400,9 @@ define(function(require, exports, module) {
                                     value: options.path 
                                         ? settings.get(options.path) 
                                         : (options.defaultValue || ""),
-                                    realtime: typeof options.realtime !== "undefined" ? options.realtime : 1
+                                    realtime: typeof options.realtime !== "undefined" ? options.realtime : 1,
+                                    onafterchange: onAfterChange,
+                                    settingPath: options.path,
                                 })
                             ]
                         });
@@ -423,8 +411,7 @@ define(function(require, exports, module) {
                         node = options.node;
                     break;
                     default:
-                        throw new Error("Unknown form element type: " 
-                            + options.type);
+                        throw new Error("Unknown form element type: " + options.type);
                 }
                 
                 if (!node) {
@@ -446,6 +433,9 @@ define(function(require, exports, module) {
 
                 foreign.addElement(node);
                 
+                addSettingListener(options.path, main, foreign || plugin);
+                addSettingListener(options.checkboxPath, secondary, foreign || plugin);
+                
                 return node;
             }
             
@@ -463,14 +453,11 @@ define(function(require, exports, module) {
                                 dropdown.setAttribute("value", item.value);
                         break;
                         default:
-                            // supported attributes
-                            var validAttributes = /^(value|visible|zindex|disabled|caption|tooltip|command|class|icon|src|submenu)$/;
                             Object.keys(item).forEach(function(key) {
                                 // Check for onclick explictly
                                 if (key === "onclick")
                                     return el.onclick = item.onclick;
-                                // Check for attributes we know exist and will directly set
-                                if (validAttributes.test(key))
+                                if (key != "id")
                                     return el.setAttribute(key, item[key]);
                             });
                         break;
