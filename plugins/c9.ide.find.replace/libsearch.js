@@ -1,8 +1,4 @@
-/**
- * Search Helper Library for the Cloud9
- *
- * @copyright 2013, Ajax.org B.V.
- */
+/*global apf*/
 
 define(function(require, exports, module) {
 
@@ -138,8 +134,8 @@ module.exports = function(settings, execFind, toggleDialog, restore, toggleOptio
                 new RegExp(searchTxt);
             }
             catch (e) {
-                tooltip.$ext.innerHTML = apf.escapeXML(e.message.replace(": /" + searchTxt + "/", ""));
-                apf.setOpacity(tooltip.$ext, 1);
+                tooltip.$ext.textContent = e.message.replace(": /" + searchTxt + "/", "");
+                tooltip.$ext.style.opacity = 1;
     
                 var pos = apf.getAbsolutePosition(win.$ext);
                 tooltip.$ext.style.left = pos[0] + txtFind.getLeft() + "px";
