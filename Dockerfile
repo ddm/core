@@ -1,4 +1,4 @@
-FROM dimdm/node:8.4.0-arm32v6
+FROM dimdm/node:6.11.3-arm32v6
 
 COPY ./node_modules /root/.c9/node_modules
 COPY ./plugins /root/.c9/plugins
