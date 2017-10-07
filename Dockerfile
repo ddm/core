@@ -51,7 +51,7 @@ RUN apk --no-cache update && apk --no-cache upgrade && apk --no-cache add \
       gulp \
       yarn \
       yo &&\
-   find -path node_modules -prune -type d -print0 | xargs -t -I {} cd {} && npm install &&\
+    find -path node_modules -prune -type d -print0 | xargs -t -I {} cd {} && npm install &&\
     cd /root/.c9 &&\
     npm install &&\
     mkdir -p /root/.c9/node/bin/ &&\
