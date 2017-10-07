@@ -16,18 +16,19 @@ RUN apk add --update \
       python \
       py-pip \
       python-dev \
-      sqlite \
+      docker \
       wget \
       git \
       bash \
       tmux &&\
-    pip install -U pip ikpdb virtualenv &&\
+    pip install -U \
+      pip \
+      ikpdb \
+      virtualenv \
+      docker-compose &&\
     find -path node_modules -prune -type d -print0 | xargs -t -I {} cd {} && npm install --no-spin &&\
     cd /root/.c9 &&\
     npm install --no-spin -g  \
-      sqlite \
-      sequelize \
-      coffee \
       typescript \
       less \
       sass \
