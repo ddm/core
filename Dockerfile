@@ -9,26 +9,30 @@ COPY ./configs /root/.c9/configs
 COPY ./user-plugins /root/.c9/user-plugins
 
 WORKDIR /root/.c9
-RUN apk add --update \
+RUN apk --no-cache update && apk --no-cache upgrade && apk --no-cache add \
+      git \
+      docker \
       build-base \
-      gcc \
       openssl \
+      gnupg \
+      gcc \
+      gdb \
       python \
       py-pip \
       python-dev \
-      docker \
-      wget \
-      git \
       bash \
+      wget \
+      curl \
+      tar \
+      htop \
+      iotop \
       tmux &&\
     pip install -U \
       pip \
       ikpdb \
       virtualenv \
       docker-compose &&\
-    find -path node_modules -prune -type d -print0 | xargs -t -I {} cd {} && npm install --no-spin &&\
-    cd /root/.c9 &&\
-    npm install --no-spin -g  \
+    npm install -g  \
       typescript \
       less \
       sass \
@@ -45,8 +49,11 @@ RUN apk add --update \
       jshint \
       grunt-cli \
       gulp \
+      yarn \
       yo &&\
-    npm install --no-spin &&\
+   find -path node_modules -prune -type d -print0 | xargs -t -I {} cd {} && npm install &&\
+    cd /root/.c9 &&\
+    npm install &&\
     mkdir -p /root/.c9/node/bin/ &&\
     ln -s `which node` /root/.c9/node/bin/node &&\
     ln -s `which npm` /root/.c9/node/bin/npm &&\
